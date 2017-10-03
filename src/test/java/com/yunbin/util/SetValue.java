@@ -24,7 +24,7 @@ package com.yunbin.util;/*
 /**
  * @test
  * @bug 4627516
- * @summary HashMap.VHashMapEntry.setValue() returns new value (as opposed to old)
+ * @summary HashMap.Node.setValue() returns new value (as opposed to old)
  * @author jbloch
  */
 

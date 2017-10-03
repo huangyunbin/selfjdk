@@ -2,7 +2,6 @@ package com.yunbin.util;
 
 import java.io.Serializable;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -11,14 +10,27 @@ import java.util.Set;
  */
 public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
 
-    class VHashMapEntry implements Map.Entry {
-        private K key;
-        private V value;
+    public VHashMap() {
+        array=new Node[16];
+    }
 
-        public VHashMapEntry(K key, V value) {
+    static class Node<K, V>  implements Map.Entry<K, V>  {
+         K key;
+         V value;
+         Node next;
+
+        public Node(){}
+
+        public Node(K key, V value, Node next) {
             this.key = key;
             this.value = value;
+            this.next = next;
         }
+
+        public Node next() {
+            return next;
+        }
+
 
         public K getKey() {
             return key;
@@ -41,7 +53,7 @@ public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
     }
 
 
-    private LinkedList[] array = new LinkedList[16];
+    private Node[] array;
 
 
     private int size;
@@ -75,16 +87,11 @@ public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
     public V get(Object key) {
         int hash = key.hashCode();
         int index = hash % array.length;
-        LinkedList<VHashMapEntry> list = array[index];
-        if (list == null) {
-            return null;
-        }
-        for (VHashMapEntry one : list) {
-            if (one.getKey().equals(key)) {
-                return one.getValue();
+        for (Node<K, V> e = array[index]; e != null; e = e.next()) {
+            if (e.getKey().equals(key)) {
+                return e.getValue();
             }
         }
-
         return null;
     }
 
@@ -92,13 +99,8 @@ public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
     public V put(K key, V value) {
         int hash = key.hashCode();
         int index = hash % array.length;
-//        V old = (V) array[index];
-        LinkedList<VHashMapEntry> list = array[index];
-        if (list == null) {
-            list = new LinkedList<VHashMapEntry>();
-        }
-        list.add(new VHashMapEntry(key, value));
-        array[index] = list;
+        Node node = new Node(key, value, array[index]);
+        array[index] = node;
         ++size;
         return null;
     }
