@@ -75,7 +75,7 @@ public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
     public V get(Object key) {
         int hash = key.hashCode();
         int index = hash % array.length;
-        LinkedList<VHashMapEntry> list = (LinkedList) array[index];
+        LinkedList<VHashMapEntry> list = array[index];
         if (list == null) {
             return null;
         }
@@ -93,7 +93,7 @@ public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
         int hash = key.hashCode();
         int index = hash % array.length;
 //        V old = (V) array[index];
-        LinkedList<VHashMapEntry> list = (LinkedList) array[index];
+        LinkedList<VHashMapEntry> list = array[index];
         if (list == null) {
             list = new LinkedList<VHashMapEntry>();
         }
