@@ -41,7 +41,7 @@ public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
     }
 
 
-    private Object[] array = new Object[16];
+    private LinkedList[] array = new LinkedList[16];
 
 
     private int size;
@@ -95,7 +95,7 @@ public class VHashMap<K, V> implements Map<K, V>, Cloneable, Serializable {
 //        V old = (V) array[index];
         LinkedList<VHashMapEntry> list = (LinkedList) array[index];
         if (list == null) {
-            list = new LinkedList<>();
+            list = new LinkedList<VHashMapEntry>();
         }
         list.add(new VHashMapEntry(key, value));
         array[index] = list;
