@@ -15,11 +15,11 @@ import static org.assertj.core.api.Assertions.fail;
  */
 public class LockTest {
     static AtomicInteger num = new AtomicInteger();
-    static Lock2 lock = new Lock2();
+    static Lock3 lock = new Lock3();
 
     @Test
     public void lockTest2() throws Exception {
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 10; i++) {
             lockTest();
         }
     }
