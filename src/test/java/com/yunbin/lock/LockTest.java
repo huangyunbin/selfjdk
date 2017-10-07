@@ -5,6 +5,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -13,30 +14,38 @@ import static org.assertj.core.api.Assertions.fail;
  * Created by cloud.huang on 17/10/7.
  */
 public class LockTest {
-    static int num = 0;
+    static AtomicInteger num = new AtomicInteger();
+    static Lock2 lock = new Lock2();
+
+    @Test
+    public void lockTest2() throws Exception {
+        for (int i = 0; i < 2; i++) {
+            lockTest();
+        }
+    }
 
     @Test
     public void lockTest() throws Exception {
-        num = 0;
+        num = new AtomicInteger();
         final List<Thread> threads = new ArrayList<Thread>();
-//        List<Thread> endThreads=new ArrayList<Thread>();
         long start = System.currentTimeMillis();
-        final Lock lock = new Lock();
-        int times = 3;
+
+        int times = 200;
+        final int sleepMs = 2;
         for (int i = 0; i < times; i++) {
             Thread thread = new Thread() {
                 @Override
                 public void run() {
                     try {
                         lock.lock();
-                        TimeUnit.MILLISECONDS.sleep(100);
+                        System.out.println("enter lock===" + num.get());
+                        TimeUnit.MILLISECONDS.sleep(sleepMs);
                         System.out.println(System.currentTimeMillis() + "  " + Thread.currentThread());
-                        num++;
+                        num.getAndIncrement();
                     } catch (Exception e) {
-
+                        e.printStackTrace();
                     } finally {
                         lock.unlock();
-                        threads.remove(Thread.currentThread());
                     }
                 }
             };
@@ -45,12 +54,12 @@ public class LockTest {
         }
 
         while (true) {
-            if (threads.size() == 0) {
+            if (num.get() == times) {
                 break;
             }
             TimeUnit.MILLISECONDS.sleep(100);
-            if (System.currentTimeMillis() - start > (times + 1) * 100) {
-                fail("超过时间了");
+            if (System.currentTimeMillis() - start > times * sleepMs + 2000) {
+                fail("超过时间了  " + num + "   " + threads.size());
             }
             int blockedNum = getBlockedNum(threads);
             if (blockedNum > 0 && blockedNum < times - 1) {
@@ -59,9 +68,10 @@ public class LockTest {
         }
 
 
-        assertThat(num).isEqualTo(times);
+        assertThat(num.get()).isEqualTo(times);
+        System.out.println("use time:" + (System.currentTimeMillis() - start));
 
-        assertThat(System.currentTimeMillis() - start).isGreaterThanOrEqualTo(times * 100);
+        assertThat(System.currentTimeMillis() - start).isGreaterThanOrEqualTo(times * sleepMs);
 
     }
 

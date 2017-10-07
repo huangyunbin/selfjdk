@@ -13,7 +13,7 @@ public class Lock {
     public void lock() {
         vector.add(Thread.currentThread());
         if (vector.size() > 1) {
-            LockSupport.park(Thread.currentThread());
+            LockSupport.park();
         }
     }
 
