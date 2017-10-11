@@ -9,7 +9,7 @@ public class Node {
     Thread currentThread;
     Node next;
 
-    private static final Unsafe unsafe = Unsafe.getUnsafe();
+    public static final Unsafe unsafe = Lock4.getUnsafeInstance();
 
 
     private static final long valueOffset;
@@ -23,50 +23,13 @@ public class Node {
         }
     }
 
-    public final boolean compareAndSet(Node expect, Node update) {
+    public final boolean compareAndSetNext(Node expect, Node update) {
         return unsafe.compareAndSwapObject(this, valueOffset, expect, update);
     }
 
 
     public Node(Thread thread) {
         this.currentThread = thread;
-    }
-
-    public boolean addNext(Node node) {
-        boolean result = compareAndSet(next, node);
-        return result;
-
-
-    }
-
-
-    public void remove(Thread thread) {
-        if (next == null) {
-            return;
-        }
-        Node currentNode = this;
-        while (true) {
-            if (currentNode.next.currentThread == thread) {
-                currentNode.compareAndSet(next, next.next);
-                break;
-            }
-            currentNode = currentNode.next;
-        }
-    }
-
-
-    public void add(Thread thread) {
-        Node newNode = new Node(thread);
-        Node currentNode = this;
-        while (true) {
-            if (currentNode.next == null) {
-                boolean flag = currentNode.addNext(newNode);
-                if (flag == true) {
-                    break;
-                }
-            }
-            currentNode = currentNode.next;
-        }
     }
 
 

@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.fail;
  */
 public class LockTest {
     static AtomicInteger num = new AtomicInteger();
-    static Lock3 lock = new Lock3();
+    static Lock4 lock = new Lock4();
 
     @Test
     public void lockTest2() throws Exception {
@@ -30,9 +30,9 @@ public class LockTest {
         final List<Thread> threads = new ArrayList<Thread>();
         long start = System.currentTimeMillis();
 
-        int times = 200;
+        int threadNums = 200;
         final int sleepMs = 2;
-        for (int i = 0; i < times; i++) {
+        for (int i = 0; i < threadNums; i++) {
             Thread thread = new Thread() {
                 @Override
                 public void run() {
@@ -42,7 +42,7 @@ public class LockTest {
                         TimeUnit.MILLISECONDS.sleep(sleepMs);
                         System.out.println(System.currentTimeMillis() + "  " + Thread.currentThread());
                         num.getAndIncrement();
-                    } catch (Exception e) {
+                    } catch (Throwable e) {
                         e.printStackTrace();
                     } finally {
                         lock.unlock();
@@ -54,31 +54,31 @@ public class LockTest {
         }
 
         while (true) {
-            if (num.get() == times) {
+            if (num.get() == threadNums) {
                 break;
             }
             TimeUnit.MILLISECONDS.sleep(100);
-            if (System.currentTimeMillis() - start > times * sleepMs + 2000) {
+            if (System.currentTimeMillis() - start > threadNums * sleepMs + 2000) {
                 fail("超过时间了  " + num + "   " + threads.size());
             }
-            int blockedNum = getBlockedNum(threads);
-            if (blockedNum > 0 && blockedNum < times - 1) {
-                fail("阻塞线程数目不对,现在为" + blockedNum);
+            int runningNum = getRunningNum(threads);
+            if (runningNum > 1) {
+                fail("运行线程数目不对,现在为" + runningNum);
             }
         }
 
 
-        assertThat(num.get()).isEqualTo(times);
+        assertThat(num.get()).isEqualTo(threadNums);
         System.out.println("use time:" + (System.currentTimeMillis() - start));
 
-        assertThat(System.currentTimeMillis() - start).isGreaterThanOrEqualTo(times * sleepMs);
+        assertThat(System.currentTimeMillis() - start).isGreaterThanOrEqualTo(threadNums * sleepMs);
 
     }
 
-    private int getBlockedNum(List<Thread> threads) {
+    private int getRunningNum(List<Thread> threads) {
         int result = 0;
         for (Thread thread : threads) {
-            if (thread.getState() == Thread.State.BLOCKED) {
+            if (thread.getState() == Thread.State.RUNNABLE) {
                 result++;
             }
         }
