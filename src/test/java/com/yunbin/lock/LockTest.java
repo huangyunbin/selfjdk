@@ -30,7 +30,7 @@ public class LockTest {
         final List<Thread> threads = new ArrayList<Thread>();
         long start = System.currentTimeMillis();
 
-        int threadNums = 200;
+        int threadNums = 300;
         final int sleepMs = 2;
         for (int i = 0; i < threadNums; i++) {
             Thread thread = new Thread() {
@@ -38,7 +38,6 @@ public class LockTest {
                 public void run() {
                     try {
                         lock.lock();
-                        System.out.println("enter lock===" + num.get());
                         TimeUnit.MILLISECONDS.sleep(sleepMs);
                         System.out.println(System.currentTimeMillis() + "  " + Thread.currentThread());
                         num.getAndIncrement();
@@ -58,7 +57,7 @@ public class LockTest {
                 break;
             }
             TimeUnit.MILLISECONDS.sleep(100);
-            if (System.currentTimeMillis() - start > threadNums * sleepMs + 2000) {
+            if (System.currentTimeMillis() - start > threadNums * sleepMs + 1000) {
                 fail("超过时间了  " + num + "   " + threads.size());
             }
             int runningNum = getRunningNum(threads);

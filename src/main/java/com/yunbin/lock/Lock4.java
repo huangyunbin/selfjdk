@@ -10,14 +10,18 @@ import java.util.concurrent.locks.LockSupport;
  */
 public class Lock4 {
     Node head = null;
+    Thread winThread = null;
 
     private static final Unsafe unsafe = getUnsafeInstance();
     private static final long headOffset;
+    private static final long winThreadOffset;
 
     static {
         try {
             headOffset = unsafe.objectFieldOffset
                     (Lock4.class.getDeclaredField("head"));
+            winThreadOffset = unsafe.objectFieldOffset
+                    (Lock4.class.getDeclaredField("winThread"));
         } catch (Exception ex) {
             throw new Error(ex);
         }
@@ -27,40 +31,60 @@ public class Lock4 {
         return unsafe.compareAndSwapObject(this, headOffset, expect, update);
     }
 
+    public final boolean compareAndSetWinThread(Thread expect, Thread update) {
+        return unsafe.compareAndSwapObject(this, winThreadOffset, expect, update);
+    }
+
     public void lock() {
-        System.out.println("lock......");
-        Node node = new Node(Thread.currentThread());
-        boolean flag = compareAndSetHead(null, node);
-        if (flag) {
-            return;
-        } else {
-            Node last = head;
-            for (; ; ) {
-                if (last.next != null) {
-                    last = last.next;
+        Node newNode = new Node(Thread.currentThread());
+        Node target = head;
+        for (; ; ) {
+            boolean flag = compareAndSetWinThread(null, Thread.currentThread());
+            if (flag) {
+                return;
+            }
+
+            if (target == null) {
+                if (compareAndSetHead(null, newNode)) {
+                    return;
+                } else {
                     continue;
                 }
-                boolean nextFlag = last.compareAndSetNext(last.next, node);
-                if (nextFlag) {
-                    LockSupport.park(this);
-                    return;
-                }
+            }
+
+            if (target.next != null) {
+                target = target.next;
+                continue;
+            }
+            if (target.compareAndSetNext(null, newNode)) {
+                System.out.println("park:" + Thread.currentThread());
+                LockSupport.park(this);
+                return;
             }
         }
     }
 
 
     public void unlock() {
-        System.out.println("unlock......");
+        System.out.println("unlock....");
         for (; ; ) {
-            Node next = head.next;
-            boolean flag = compareAndSetHead(head, head.next);
-            System.out.println("head is " + head);
-            if (flag) {
-                if (next != null) {
-                    LockSupport.unpark(next.currentThread);
-                    System.out.println("unpark:" + next.currentThread);
+            if (head == null ) {
+                boolean flag = compareAndSetWinThread(Thread.currentThread(), null);
+                if (flag) {
+                    return;
+                } else {
+                    continue;
                 }
+            }
+
+            Node target = head;
+            Thread thread = target.currentThread;
+            Thread oldThread = target.currentThread;
+            Node targetNext = target.next;
+            if (compareAndSetHead(target, targetNext)) {
+                System.out.println("unpark:" + thread);
+                LockSupport.unpark(thread);
+                compareAndSetWinThread(oldThread, thread);
                 return;
             }
         }
