@@ -39,27 +39,27 @@ public class Lock4 {
         Node newNode = new Node(Thread.currentThread());
         Node target = head;
         for (; ; ) {
-            boolean flag = compareAndSetWinThread(null, Thread.currentThread());
-            if (flag) {
+            if (compareAndSetWinThread(null, Thread.currentThread())) {
                 return;
             }
 
             if (target == null) {
                 if (compareAndSetHead(null, newNode)) {
-                    return;
+                    System.out.println("park:" + Thread.currentThread());
+                    LockSupport.park(this);
                 } else {
                     continue;
                 }
             }
 
-            if (target.next != null) {
+            if (target != null && target.next != null) {
                 target = target.next;
                 continue;
             }
-            if (target.compareAndSetNext(null, newNode)) {
+            if (target != null && target.compareAndSetNext(null, newNode)) {
                 System.out.println("park:" + Thread.currentThread());
                 LockSupport.park(this);
-                return;
+//                return;
             }
         }
     }
@@ -68,7 +68,7 @@ public class Lock4 {
     public void unlock() {
         System.out.println("unlock....");
         for (; ; ) {
-            if (head == null ) {
+            if (head == null) {
                 boolean flag = compareAndSetWinThread(Thread.currentThread(), null);
                 if (flag) {
                     return;
@@ -79,12 +79,12 @@ public class Lock4 {
 
             Node target = head;
             Thread thread = target.currentThread;
-            Thread oldThread = target.currentThread;
+            Thread oldThread = winThread;
             Node targetNext = target.next;
             if (compareAndSetHead(target, targetNext)) {
                 System.out.println("unpark:" + thread);
                 LockSupport.unpark(thread);
-                compareAndSetWinThread(oldThread, thread);
+                compareAndSetWinThread(oldThread, null);
                 return;
             }
         }
