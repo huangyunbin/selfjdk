@@ -17,7 +17,7 @@ public class T {
                 System.out.println("1 lock");
                 lock.lock();
                 try {
-                    TimeUnit.MILLISECONDS.sleep(400);
+                    TimeUnit.MILLISECONDS.sleep(400000000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -35,7 +35,7 @@ public class T {
 
                 lock.lock();
                 try {
-                    TimeUnit.MILLISECONDS.sleep(500);
+                    TimeUnit.MILLISECONDS.sleep(500000000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -53,22 +53,22 @@ public class T {
 //        }
 
 
-//        new Thread() {
-//            @Override
-//            public void run() {
-//                System.out.println("3 lock");
-//
-//                lock.lock();
-//                try {
-//                    TimeUnit.MILLISECONDS.sleep(500000000);
-//                } catch (InterruptedException e) {
-//                    e.printStackTrace();
-//                }
-//                lock.unlock();
-//                System.out.println("3 unlock");
-//
-//            }
-//        }.start();
+        new Thread() {
+            @Override
+            public void run() {
+                System.out.println("3 lock");
+
+                lock.lock();
+                try {
+                    TimeUnit.MILLISECONDS.sleep(500000000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                lock.unlock();
+                System.out.println("3 unlock");
+
+            }
+        }.start();
 
 
 

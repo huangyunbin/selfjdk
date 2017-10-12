@@ -7,6 +7,7 @@ import sun.misc.Unsafe;
  */
 public class Node {
     Thread currentThread;
+    Node prev;
     Node next;
 
     public static final Unsafe unsafe = Lock4.getUnsafeInstance();

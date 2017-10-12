@@ -9,17 +9,22 @@ import java.util.concurrent.locks.LockSupport;
  * Created by cloud.huang on 17/10/11.
  */
 public class Lock4 {
-    Node head = null;
-    Thread winThread = null;
+    volatile Node head = null;
+    volatile Node tail = null;
+    volatile Thread winThread = null;
 
     private static final Unsafe unsafe = getUnsafeInstance();
     private static final long headOffset;
+    private static final long tailOffset;
     private static final long winThreadOffset;
 
     static {
         try {
             headOffset = unsafe.objectFieldOffset
                     (Lock4.class.getDeclaredField("head"));
+            tailOffset = unsafe.objectFieldOffset
+                    (Lock4.class.getDeclaredField("tail"));
+
             winThreadOffset = unsafe.objectFieldOffset
                     (Lock4.class.getDeclaredField("winThread"));
         } catch (Exception ex) {
@@ -31,63 +36,69 @@ public class Lock4 {
         return unsafe.compareAndSwapObject(this, headOffset, expect, update);
     }
 
+    public final boolean compareAndSetTail(Node expect, Node update) {
+        return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
+    }
+
     public final boolean compareAndSetWinThread(Thread expect, Thread update) {
         return unsafe.compareAndSwapObject(this, winThreadOffset, expect, update);
     }
 
     public void lock() {
+        System.out.println("lock....");
+        if (compareAndSetWinThread(null, Thread.currentThread())) {
+            return;
+        }
         Node newNode = new Node(Thread.currentThread());
-        Node target = head;
+        final Node node = addWaiter(newNode);
         for (; ; ) {
             if (compareAndSetWinThread(null, Thread.currentThread())) {
+                head = node;
+                node.currentThread = null;
+                node.prev = null;
                 return;
             }
+            System.out.println("park:" + Thread.currentThread());
+            LockSupport.park(this);
+        }
+    }
 
-            if (target == null) {
-                if (compareAndSetHead(null, newNode)) {
-                    System.out.println("park:" + Thread.currentThread());
-                    LockSupport.park(this);
-                } else {
-                    continue;
+    private Node addWaiter(Node node) {
+        for (; ; ) {
+            Node t = tail;
+            if (t == null) {
+                Node h = new Node(null);
+                h.next = node;
+                node.prev = h;
+                if (compareAndSetHead(null, h)) {
+                    tail = node;
+                    return node;
+                }
+            } else {
+                node.prev = t;
+                if (compareAndSetTail(t, node)) {
+                    t.next = node;
+                    return node;
                 }
             }
-
-            if (target != null && target.next != null) {
-                target = target.next;
-                continue;
-            }
-            if (target != null && target.compareAndSetNext(null, newNode)) {
-                System.out.println("park:" + Thread.currentThread());
-                LockSupport.park(this);
-//                return;
-            }
         }
+
     }
 
 
     public void unlock() {
         System.out.println("unlock....");
-        for (; ; ) {
-            if (head == null) {
-                boolean flag = compareAndSetWinThread(Thread.currentThread(), null);
-                if (flag) {
-                    return;
-                } else {
-                    continue;
+        if (compareAndSetWinThread(Thread.currentThread(), null)) {
+            if (head != null) {
+                Node targetNext = head.next;
+                if (targetNext != null) {
+                    System.out.println("unpark:" + targetNext.currentThread);
+                    LockSupport.unpark(targetNext.currentThread);
                 }
             }
-
-            Node target = head;
-            Thread thread = target.currentThread;
-            Thread oldThread = winThread;
-            Node targetNext = target.next;
-            if (compareAndSetHead(target, targetNext)) {
-                System.out.println("unpark:" + thread);
-                LockSupport.unpark(thread);
-                compareAndSetWinThread(oldThread, null);
-                return;
-            }
         }
+
+
     }
 
 
