@@ -18,25 +18,27 @@ public class Lock4 {
     private static final Unsafe unsafe = getUnsafeInstance();
     private static final long headOffset;
     private static final long tailOffset;
-    private static final long winThreadOffset;
+    private static final long stateOffset;
 
 
     public void lock() {
         System.out.println("lock....");
-        if (winThread == Thread.currentThread()) {
+        if (state > 0 && winThread == Thread.currentThread()) {
             state++;
             return;
         }
-        if (compareAndSetWinThread(null, Thread.currentThread())) {
+        if (compareAndSetState(0, 1)) {
+            winThread = Thread.currentThread();
             return;
         }
         Node newNode = new Node(Thread.currentThread());
         final Node node = addWaiter(newNode);
         for (; ; ) {
-            if (compareAndSetWinThread(null, Thread.currentThread())) {
+            if (compareAndSetState(0, 1)) {
                 head = node;
                 node.currentThread = null;
                 node.prev = null;
+                winThread = Thread.currentThread();
                 return;
             }
             System.out.println("park:" + Thread.currentThread());
@@ -71,20 +73,16 @@ public class Lock4 {
         System.out.println("unlock....");
         if (state > 0 && winThread == Thread.currentThread()) {
             state--;
-            if (state > 0) {
-                return;
-            }
-        }
-        if (compareAndSetWinThread(Thread.currentThread(), null)) {
-            if (head != null) {
-                Node targetNext = head.next;
-                if (targetNext != null) {
-                    System.out.println("unpark:" + targetNext.currentThread);
-                    LockSupport.unpark(targetNext.currentThread);
+            if (state == 0) {
+                if (head != null) {
+                    Node targetNext = head.next;
+                    if (targetNext != null) {
+                        System.out.println("unpark:" + targetNext.currentThread);
+                        LockSupport.unpark(targetNext.currentThread);
+                    }
                 }
             }
         }
-
 
     }
 
@@ -105,9 +103,8 @@ public class Lock4 {
                     (Lock4.class.getDeclaredField("head"));
             tailOffset = unsafe.objectFieldOffset
                     (Lock4.class.getDeclaredField("tail"));
-
-            winThreadOffset = unsafe.objectFieldOffset
-                    (Lock4.class.getDeclaredField("winThread"));
+            stateOffset = unsafe.objectFieldOffset
+                    (Lock4.class.getDeclaredField("state"));
         } catch (Exception ex) {
             throw new Error(ex);
         }
@@ -121,8 +118,9 @@ public class Lock4 {
         return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
     }
 
-    public final boolean compareAndSetWinThread(Thread expect, Thread update) {
-        return unsafe.compareAndSwapObject(this, winThreadOffset, expect, update);
+
+    public final boolean compareAndSetState(int expect, int update) {
+        return unsafe.compareAndSwapInt(this, stateOffset, expect, update);
     }
 
 

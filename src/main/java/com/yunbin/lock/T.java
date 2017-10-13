@@ -21,10 +21,11 @@ public class T {
 
                     lock.lock();
                     try {
-                        TimeUnit.MILLISECONDS.sleep(10);
+                        TimeUnit.MILLISECONDS.sleep(2);
                     } catch (Exception e) {
-                        lock.unlock();
+                        e.printStackTrace();
                     }
+                    lock.unlock();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -45,10 +46,11 @@ public class T {
                     TimeUnit.MILLISECONDS.sleep(2);
                     lock.lock();
                     try {
-                        TimeUnit.MILLISECONDS.sleep(5);
+                        TimeUnit.MILLISECONDS.sleep(8);
                     } catch (Exception e) {
-                        lock.unlock();
+                        e.printStackTrace();
                     }
+                    lock.unlock();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -75,11 +77,13 @@ public class T {
                 try {
                     TimeUnit.MILLISECONDS.sleep(5);
                     lock.lock();
+                    lock.lock();
                     try {
-                        TimeUnit.MILLISECONDS.sleep(10);
+                        TimeUnit.MILLISECONDS.sleep(6);
                     } catch (Exception e) {
-                        lock.unlock();
+                        e.printStackTrace();
                     }
+                    lock.unlock();
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
