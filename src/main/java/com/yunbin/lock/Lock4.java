@@ -71,15 +71,17 @@ public class Lock4 {
 
     public void unlock() {
         System.out.println("unlock....");
-        if (state > 0 && winThread == Thread.currentThread()) {
-            state--;
-            if (state == 0) {
-                if (head != null) {
-                    Node targetNext = head.next;
-                    if (targetNext != null) {
-                        System.out.println("unpark:" + targetNext.currentThread);
-                        LockSupport.unpark(targetNext.currentThread);
-                    }
+        if (state <= 0 || winThread != Thread.currentThread()) {
+            throw new RuntimeException("unlock error");
+        }
+        state--;
+        if (state == 0) {
+            winThread = null;
+            if (head != null) {
+                Node targetNext = head.next;
+                if (targetNext != null) {
+                    System.out.println("unpark:" + targetNext.currentThread);
+                    LockSupport.unpark(targetNext.currentThread);
                 }
             }
         }
