@@ -13,39 +13,20 @@ public class Lock4 {
     volatile Node tail = null;
     volatile Thread winThread = null;
 
+    private int state = 0;
+
     private static final Unsafe unsafe = getUnsafeInstance();
     private static final long headOffset;
     private static final long tailOffset;
     private static final long winThreadOffset;
 
-    static {
-        try {
-            headOffset = unsafe.objectFieldOffset
-                    (Lock4.class.getDeclaredField("head"));
-            tailOffset = unsafe.objectFieldOffset
-                    (Lock4.class.getDeclaredField("tail"));
-
-            winThreadOffset = unsafe.objectFieldOffset
-                    (Lock4.class.getDeclaredField("winThread"));
-        } catch (Exception ex) {
-            throw new Error(ex);
-        }
-    }
-
-    public final boolean compareAndSetHead(Node expect, Node update) {
-        return unsafe.compareAndSwapObject(this, headOffset, expect, update);
-    }
-
-    public final boolean compareAndSetTail(Node expect, Node update) {
-        return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
-    }
-
-    public final boolean compareAndSetWinThread(Thread expect, Thread update) {
-        return unsafe.compareAndSwapObject(this, winThreadOffset, expect, update);
-    }
 
     public void lock() {
         System.out.println("lock....");
+        if (winThread == Thread.currentThread()) {
+            state++;
+            return;
+        }
         if (compareAndSetWinThread(null, Thread.currentThread())) {
             return;
         }
@@ -88,6 +69,12 @@ public class Lock4 {
 
     public void unlock() {
         System.out.println("unlock....");
+        if (state > 0 && winThread == Thread.currentThread()) {
+            state--;
+            if (state > 0) {
+                return;
+            }
+        }
         if (compareAndSetWinThread(Thread.currentThread(), null)) {
             if (head != null) {
                 Node targetNext = head.next;
@@ -110,6 +97,32 @@ public class Lock4 {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    static {
+        try {
+            headOffset = unsafe.objectFieldOffset
+                    (Lock4.class.getDeclaredField("head"));
+            tailOffset = unsafe.objectFieldOffset
+                    (Lock4.class.getDeclaredField("tail"));
+
+            winThreadOffset = unsafe.objectFieldOffset
+                    (Lock4.class.getDeclaredField("winThread"));
+        } catch (Exception ex) {
+            throw new Error(ex);
+        }
+    }
+
+    public final boolean compareAndSetHead(Node expect, Node update) {
+        return unsafe.compareAndSwapObject(this, headOffset, expect, update);
+    }
+
+    public final boolean compareAndSetTail(Node expect, Node update) {
+        return unsafe.compareAndSwapObject(this, tailOffset, expect, update);
+    }
+
+    public final boolean compareAndSetWinThread(Thread expect, Thread update) {
+        return unsafe.compareAndSwapObject(this, winThreadOffset, expect, update);
     }
 
 
