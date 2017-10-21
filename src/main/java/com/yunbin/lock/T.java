@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit;
 public class T {
 
     public static void main(String[] args) {
-        final Lock4 lock = new Lock4();
+        final UnfairStackLock lock = new UnfairStackLock();
 
 
         new Thread() {

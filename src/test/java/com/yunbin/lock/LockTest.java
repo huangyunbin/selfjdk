@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.fail;
  */
 public class LockTest {
     static AtomicInteger num = new AtomicInteger();
-    static Lock4 lock = new Lock4();
+    static UnfairStackLock lock = new UnfairStackLock();
 
     @Test
     public void lockTest2() throws Exception {
